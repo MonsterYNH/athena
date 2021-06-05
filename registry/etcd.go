@@ -16,24 +16,11 @@ type EtcdRegistry struct {
 	client     *clientv3.Client
 	leaseID    clientv3.LeaseID
 	clientConn resolver.ClientConn
-	config     RegistryConfig
-}
-
-func NewEtcdRegistry(options ...RegistryOption) (*EtcdRegistry, error) {
-	config := &RegistryConfig{}
-	for _, option := range options {
-		if err := option(config); err != nil {
-			return nil, err
-		}
-	}
-
-	return &EtcdRegistry{
-		config: *config,
-	}, nil
+	config     *RegistryConfig
 }
 
 func (etcd *EtcdRegistry) Scheme() string {
-	return "test"
+	return "etcd"
 }
 
 func (etcd *EtcdRegistry) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
@@ -93,14 +80,14 @@ func (etcd *EtcdRegistry) watchAddress(cc resolver.ClientConn) {
 	}
 }
 
-func (etcd *EtcdRegistry) Regist() (interface{}, error) {
+func (etcd *EtcdRegistry) Regist() error {
 	client, err := clientv3.New(clientv3.Config{
 		Endpoints:   etcd.config.Entrypoints,
 		DialTimeout: etcd.config.DialTimeout,
 	})
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	key := fmt.Sprintf("%s://%s/%s", etcd.Scheme(), etcd.config.Name, etcd.config.IP)
@@ -110,19 +97,48 @@ func (etcd *EtcdRegistry) Regist() (interface{}, error) {
 
 	resp, err := client.Grant(ctx, etcd.config.TTL)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if _, err := client.Put(ctx, key, string(val), clientv3.WithLease(resp.ID)); err != nil {
-		return nil, err
+		return err
 	}
 
 	etcd.client = client
 	etcd.leaseID = resp.ID
 
-	return client.KeepAlive(ctx, resp.ID)
+	ch, err := client.KeepAlive(ctx, resp.ID)
+	if err != nil {
+		return err
+	}
+
+	go etcd.listen(ch)
+
+	return nil
+
 }
 
-func (etcd *EtcdRegistry) Stop() {
-	etcd.client.Revoke(context.Background(), etcd.leaseID)
+func (etcd *EtcdRegistry) listen(ch <-chan *clientv3.LeaseKeepAliveResponse) {
+	for {
+		select {
+		case <-etcd.client.Ctx().Done():
+			log.Println("ERROR: etcd registry exit with context")
+			return
+		case _, ok := <-ch:
+			if !ok {
+				log.Println("ERROR: etcd registry keep alive exist")
+				return
+			}
+		}
+	}
+}
+
+func (etcd *EtcdRegistry) Stop() error {
+	_, err := etcd.client.Revoke(context.Background(), etcd.leaseID)
+	return err
+}
+
+func (etcd *EtcdRegistry) SetConfig(config *RegistryConfig) error {
+	etcd.config = config
+	return nil
 }

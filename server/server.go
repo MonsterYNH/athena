@@ -65,10 +65,10 @@ func (server *Server) Run(options ...ServerConfigOption) error {
 	)
 }
 
-func GetGrpcRouteInfo(server *grpc.Server) []string {
+func (server *Server) GetGrpcRouteInfo() []string {
 	routeInfos := make([]string, 0)
 
-	for name, info := range server.GetServiceInfo() {
+	for name, info := range server.grpcServer.GetServiceInfo() {
 		for _, method := range info.Methods {
 			routeInfos = append(routeInfos, fmt.Sprintf("%s/%s", name, method.Name))
 		}
