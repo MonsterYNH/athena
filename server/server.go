@@ -21,9 +21,11 @@ type ServerConfig struct {
 }
 
 type Server struct {
-	registry   *registry.RegistryAble
-	grpcServer *grpc.Server
-	gwMux      *runtime.ServeMux
+	registry        *registry.RegistryAble
+	grpcServer      *grpc.Server
+	gwMux           *runtime.ServeMux
+	authToken       string
+	enableAuthCheck bool
 }
 
 type ServerConfigOption func(*ServerConfig) error
