@@ -1,24 +1,22 @@
 package server
 
 import (
-	"athena/registry"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
 
+	"github.com/MonsterYNH/athena/registry"
+
+	"github.com/MonsterYNH/athena/config"
+	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
-
-type ServerConfig struct {
-	Host       string
-	Port       int
-	EnableHTTP bool
-}
 
 type Server struct {
 	registry        *registry.RegistryAble
@@ -28,7 +26,17 @@ type Server struct {
 	enableAuthCheck bool
 }
 
-type ServerConfigOption func(*ServerConfig) error
+type ServerConfigOption func(*config.ServiceConfig) error
+
+func New(serverOpts []grpc.ServerOption, serveMuxOpts []runtime.ServeMuxOption) (*grpc.Server, *runtime.ServeMux) {
+	grpcServer := grpc.NewServer(serverOpts)
+
+	serveMuxOpts = append(serveMuxOpts, runtime.WithIncomingHeaderMatcher(headerMatcher))
+	serveMuxOpts = append(serveMuxOpts, runtime.WithForwardResponseOption(outgoingHeaderFilter))
+	mux := runtime.NewServeMux(serveMuxOpts...)
+
+	return grpcServer, mux
+}
 
 func NewServer(server *grpc.Server, gw *runtime.ServeMux) (*Server, error) {
 	return &Server{
@@ -38,7 +46,7 @@ func NewServer(server *grpc.Server, gw *runtime.ServeMux) (*Server, error) {
 }
 
 func (server *Server) Run(options ...ServerConfigOption) error {
-	config := new(ServerConfig)
+	config := new(config.ServiceConfig)
 
 	for _, option := range options {
 		if err := option(config); err != nil {
@@ -79,4 +87,26 @@ func (server *Server) GetGrpcRouteInfo() []string {
 	sort.Strings(routeInfos)
 
 	return routeInfos
+}
+
+func headerMatcher(key string) (string, bool) {
+	switch strings.ToLower(key) {
+	case "athena_token":
+		return key, true
+	default:
+		return runtime.DefaultHeaderMatcher(key)
+	}
+}
+
+func outgoingHeaderFilter(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
+	md, ok := runtime.ServerMetadataFromContext(ctx)
+	if !ok {
+		return nil
+	}
+
+	if values := md.HeaderMD.Get("athena_token"); len(values) > 0 {
+		w.Header().Set("ATHENA_TOKEN", values[0])
+	}
+
+	return nil
 }

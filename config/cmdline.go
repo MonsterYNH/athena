@@ -18,6 +18,7 @@ func init() {
 type Config struct {
 	*DatabaseConfig
 	*ServiceConfig
+	*RegistryConfig
 }
 
 func GetConfig() (*Config, error) {
@@ -42,6 +43,12 @@ func GetConfig() (*Config, error) {
 		return nil, err
 	}
 	config.ServiceConfig = serverConfig
+
+	registryConfig, err := newRegistryConfig(viper.GetViper())
+	if err != nil {
+		return nil, err
+	}
+	config.RegistryConfig = registryConfig
 
 	return config, nil
 }

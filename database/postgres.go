@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/MonsterYNH/athena/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type PostgresDataBase struct{}
 
-func (database *PostgresDataBase) NewDatabase(config *DatabaseConfig) (*gorm.DB, error) {
+func (database *PostgresDataBase) NewDatabase(config *config.DatabaseConfig) (*gorm.DB, error) {
 	db, err := gorm.Open(
 		postgres.New(postgres.Config{
 			DSN: fmt.Sprintf(

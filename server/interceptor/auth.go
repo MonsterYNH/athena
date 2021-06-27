@@ -1,9 +1,9 @@
 package interceptor
 
 import (
-	"athena/util"
 	"context"
 
+	"github.com/MonsterYNH/athena/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

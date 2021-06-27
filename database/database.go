@@ -1,35 +1,24 @@
 package database
 
 import (
+	"github.com/MonsterYNH/athena/config"
 	"gorm.io/gorm"
 )
 
-type DatabaseConfig struct {
-	Host         string
-	Port         int
-	User         string
-	Password     string
-	Name         string
-	SSLMode      string
-	TimeZone     string
-	MaxIdleConns int
-	MaxOpenConns int
-}
-
 type DatabaseAble interface {
-	NewDatabase(*DatabaseConfig) (*gorm.DB, error)
+	NewDatabase(*config.DatabaseConfig) (*gorm.DB, error)
 }
 
-type DatabaseConfigOption func(*DatabaseConfig) error
+type DatabaseConfigOption func(*config.DatabaseConfig) error
 
 type Database struct {
 	DatabaseAble
-	config *DatabaseConfig
+	config *config.DatabaseConfig
 	db     *gorm.DB
 }
 
 func NewDatabaseWithOption(database DatabaseAble, opts ...DatabaseConfigOption) (*Database, error) {
-	config := &DatabaseConfig{}
+	config := &config.DatabaseConfig{}
 	for _, option := range opts {
 		if err := option(config); err != nil {
 			return nil, err
