@@ -1,2 +1,6 @@
 .vscode
 api
+bin
+orm
+protos
+services

@@ -1,4 +1,4 @@
-module athena
+module github.com/MonsterYNH/athena
 
 go 1.16
 
