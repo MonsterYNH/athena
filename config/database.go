@@ -18,6 +18,8 @@ type DatabaseConfig struct {
 	MaxOpenConns int
 }
 
+type DatabaseConfigOption func(*DatabaseConfig) error
+
 func newDatabaseConfig(v *viper.Viper) (*DatabaseConfig, error) {
 	sslMode := v.GetString("database.ssl_mode")
 	if len(sslMode) == 0 {

@@ -9,15 +9,13 @@ type DatabaseAble interface {
 	NewDatabase(*config.DatabaseConfig) (*gorm.DB, error)
 }
 
-type DatabaseConfigOption func(*config.DatabaseConfig) error
-
 type Database struct {
 	DatabaseAble
 	config *config.DatabaseConfig
 	db     *gorm.DB
 }
 
-func NewDatabaseWithOption(database DatabaseAble, opts ...DatabaseConfigOption) (*Database, error) {
+func NewDatabaseWithOption(database DatabaseAble, opts ...config.DatabaseConfigOption) (*Database, error) {
 	config := &config.DatabaseConfig{}
 	for _, option := range opts {
 		if err := option(config); err != nil {

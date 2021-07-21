@@ -29,7 +29,7 @@ type Server struct {
 type ServerConfigOption func(*config.ServiceConfig) error
 
 func New(serverOpts []grpc.ServerOption, serveMuxOpts []runtime.ServeMuxOption) (*grpc.Server, *runtime.ServeMux) {
-	grpcServer := grpc.NewServer(serverOpts)
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	serveMuxOpts = append(serveMuxOpts, runtime.WithIncomingHeaderMatcher(headerMatcher))
 	serveMuxOpts = append(serveMuxOpts, runtime.WithForwardResponseOption(outgoingHeaderFilter))
